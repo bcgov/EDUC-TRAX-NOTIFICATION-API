@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Template
+labels:
+  template: trax-notification-api-pipeline
+metadata:
+  name: trax-notification-api-pipeline
+objects:
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      name: "trax-notification-api-pipeline"
+    spec:
+      source:
+        git:
+          uri: "https://github.com/bcgov/EDUC-TRAX-NOTIFICATION-API"
+      strategy:
+        jenkinsPipelineStrategy:
+          jenkinsfilePath: tools/jenkins/Jenkinsfile
