@@ -58,7 +58,7 @@ public class NatsConnection implements Closeable {
         .connectionTimeout(Duration.ofSeconds(5))
         .executor(new EnhancedQueueExecutor.Builder()
             .setThreadFactory(new ThreadFactoryBuilder().setNameFormat("core-nats-%d").build())
-            .setCorePoolSize(2).setMaximumPoolSize(20).setKeepAliveTime(Duration.ofMillis(500)).build())
+            .setCorePoolSize(10).setMaximumPoolSize(50).setKeepAliveTime(Duration.ofMillis(500)).build())
         .maxReconnects(maxReconnects)
         .reconnectWait(Duration.ofSeconds(2))
         .servers(new String[]{stanUrl})
