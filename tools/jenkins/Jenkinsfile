@@ -1,37 +1,34 @@
 pipeline{
   agent any
-
   environment{
     extJSHelper = '';
-          DEBUG_OUTPUT = 'false'
-          NAMESPACE='8878b4'
-          COMMON_NAMESPACE='75e61b'
-          TOOLS = "${NAMESPACE}-tools"
-          DEV = "${NAMESPACE}-dev"
+    DEBUG_OUTPUT = 'false'
 
-          APP_NAME = 'trax-notification-api'
-          REPO_NAME = "educ-${APP_NAME}"
-          OWNER = 'bcgov'
-          JOB_NAME = 'main'
-          TAG = 'latest'
-          TARGET_ENV = 'dev'
-          STAGING_ENV = 'Dev'
-          TARGET_ENVIRONMENT = "${NAMESPACE}-${TARGET_ENV}"
+    NAMESPACE='75e61b'
+    TOOLS = "${NAMESPACE}-tools"
+    DEV = "${NAMESPACE}-dev"
 
-          APP_DOMAIN = 'apps.silver.devops.gov.bc.ca'
-          SOURCE_REPO_REF = 'main'
-          SOURCE_REPO_URL = 'https://github.com/${OWNER}/${REPO_NAME}.git'
-          DC_URL = "https://raw.githubusercontent.com/${OWNER}/${REPO_NAME}/${SOURCE_REPO_REF}/tools/openshift/api.dc.yaml"
-          MIN_REPLICAS = "1"
-          MAX_REPLICAS = "1"
-          MIN_CPU = "50m"
-          MAX_CPU = "100m"
-          MIN_MEM = "400Mi"
-          MAX_MEM = "800Mi"
+    APP_NAME = 'trax-notification-api'
+    REPO_NAME = "educ-${APP_NAME}"
+    OWNER = 'bcgov'
+    JOB_NAME = 'main'
+    TAG = 'latest'
+    TARGET_ENV = 'tools'
+    STAGING_ENV = 'Tools'
+    TARGET_ENVIRONMENT = "${NAMESPACE}-${TARGET_ENV}"
 
+    APP_DOMAIN = 'apps.silver.devops.gov.bc.ca'
+    SOURCE_REPO_REF = 'main'
+    SOURCE_REPO_URL = 'https://github.com/${OWNER}/${REPO_NAME}.git'
+    DC_URL = "https://raw.githubusercontent.com/${OWNER}/${REPO_NAME}/master/tools/openshift/api.dc.yaml"
+    MIN_REPLICAS = "1"
+    MAX_REPLICAS = "1"
+    MIN_CPU = "40m"
+    MAX_CPU = "80m"
+    MIN_MEM = "400Mi"
+    MAX_MEM = "750Mi"
   }
-
-  stages {
+  stages{
     stage('Initialize') {
       steps {
         script {
@@ -55,8 +52,8 @@ pipeline{
             openshift.withProject(TOOLS) {
               try {
                 echo "Building API..."
-                def bcAPI = openshift.process('-f', 'https://raw.githubusercontent.com/${OWNER}/${REPO_NAME}/master/tools/openshift/api.bc.yaml', "REPO_NAME=${REPO_NAME}-${JOB_NAME}", "JOB_NAME=${JOB_NAME}", "SOURCE_REPO_URL=${SOURCE_REPO_URL}", "SOURCE_REPO_REF=${SOURCE_REPO_REF}")
-                openshift.apply(bcAPI).narrow('bc').startBuild('-w').logs('-f')
+                def bcBackend = openshift.process('-f', 'https://raw.githubusercontent.com/${OWNER}/${REPO_NAME}/main/tools/openshift/api.bc.yaml', "REPO_NAME=${REPO_NAME}-${JOB_NAME}", "JOB_NAME=${JOB_NAME}", "SOURCE_REPO_URL=${SOURCE_REPO_URL}", "SOURCE_REPO_REF=${SOURCE_REPO_REF}")
+                openshift.apply(bcBackend).narrow('bc').startBuild('-w').logs('-f')
 
                 openshift.tag("${REPO_NAME}-${JOB_NAME}:latest", "${REPO_NAME}-${JOB_NAME}:${JOB_NAME}")
               } catch (e) {
@@ -91,7 +88,7 @@ pipeline{
     stage('Promote and configure DEV') {
       steps{
         script{
-          extJSHelper.performTraxNotificationApiDeploy(STAGING_ENV, TARGET_ENVIRONMENT, "${REPO_NAME}", "${APP_NAME}", JOB_NAME, TAG, TOOLS, TARGET_ENVIRONMENT, APP_DOMAIN, "${DC_URL}", "${MIN_REPLICAS}", "${MAX_REPLICAS}", "${MIN_CPU}", "${MAX_CPU}", "${MIN_MEM}", "${MAX_MEM}", "${TARGET_ENV}", "${NAMESPACE}", "${COMMON_NAMESPACE}")
+          extJSHelper.performApiDeploy(STAGING_ENV, TARGET_ENVIRONMENT, "${REPO_NAME}", "${APP_NAME}", JOB_NAME, TAG, TOOLS, TARGET_ENVIRONMENT, APP_DOMAIN, "${DC_URL}", "${MIN_REPLICAS}", "${MAX_REPLICAS}", "${MIN_CPU}", "${MAX_CPU}", "${MIN_MEM}", "${MAX_MEM}", "${TARGET_ENV}", "${NAMESPACE}", "${COMMON_NAMESPACE}")
         }
       }
       post{
@@ -105,3 +102,5 @@ pipeline{
     }
   }
 }
+
+
