@@ -12,8 +12,6 @@ public class TopicsTest {
 
   @Test
   public void test() {
-    assertThat(Topics.PEN_MATCH_EVENTS_TOPIC).isNotNull();
     assertThat(Topics.PEN_SERVICES_EVENTS_TOPIC).isNotNull();
-    assertThat(Topics.STUDENT_EVENTS_TOPIC).isNotNull();
   }
 }
