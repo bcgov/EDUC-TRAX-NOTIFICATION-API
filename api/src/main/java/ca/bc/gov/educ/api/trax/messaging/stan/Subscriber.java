@@ -4,6 +4,7 @@ import ca.bc.gov.educ.api.trax.constants.Topics;
 import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import ca.bc.gov.educ.api.trax.service.EventHandlerDelegatorService;
 import ca.bc.gov.educ.api.trax.struct.ChoreographedEvent;
+import ca.bc.gov.educ.api.trax.struct.EventType;
 import ca.bc.gov.educ.api.trax.util.JsonUtil;
 import io.nats.client.Connection;
 import io.nats.streaming.*;
@@ -109,8 +110,13 @@ public class Subscriber implements Closeable {
           log.warn("payload is null, ignoring event :: {}", event);
           return;
         }
-        this.eventHandlerDelegatorService.handleChoreographyEvent(event, message);
-        log.info("received event :: {} ", event);
+        if (event.getEventType().equals(EventType.CREATE_MERGE) || event.getEventType().equals(EventType.DELETE_MERGE)) {
+          this.eventHandlerDelegatorService.handleChoreographyEvent(event, message);
+        } else {
+          message.ack();
+          log.warn("API not interested in other events, ignoring event :: {}", event);
+        }
+
       } catch (final Exception ex) {
         log.error("Exception ", ex);
       }
