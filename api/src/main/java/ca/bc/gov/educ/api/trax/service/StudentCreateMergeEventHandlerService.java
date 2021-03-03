@@ -1,5 +1,6 @@
 package ca.bc.gov.educ.api.trax.service;
 
+import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import ca.bc.gov.educ.api.trax.repository.EventRepository;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import ca.bc.gov.educ.api.trax.struct.EventType;
@@ -24,8 +25,8 @@ public class StudentCreateMergeEventHandlerService extends BaseStudentMergeEvent
    * @param chesEmailService the ches email service
    */
   @Autowired
-  public StudentCreateMergeEventHandlerService(final EventRepository eventRepository, final RestUtils restUtils, final CHESEmailService chesEmailService) {
-    super(restUtils, chesEmailService, eventRepository);
+  public StudentCreateMergeEventHandlerService(final EventRepository eventRepository, final RestUtils restUtils, final CHESEmailService chesEmailService, final ApplicationProperties applicationProperties) {
+    super(restUtils, chesEmailService, eventRepository, applicationProperties);
   }
 
 

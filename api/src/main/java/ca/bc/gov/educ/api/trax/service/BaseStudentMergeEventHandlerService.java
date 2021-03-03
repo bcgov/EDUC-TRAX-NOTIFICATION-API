@@ -2,6 +2,7 @@ package ca.bc.gov.educ.api.trax.service;
 
 import ca.bc.gov.educ.api.trax.constants.EventStatus;
 import ca.bc.gov.educ.api.trax.model.Event;
+import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import ca.bc.gov.educ.api.trax.repository.EventRepository;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import ca.bc.gov.educ.api.trax.struct.Student;
@@ -27,11 +28,13 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
   protected final RestUtils restUtils;
   protected final CHESEmailService chesEmailService;
   protected final EventRepository eventRepository;
+  protected final ApplicationProperties applicationProperties;
 
-  protected BaseStudentMergeEventHandlerService(final RestUtils restUtils, final CHESEmailService chesEmailService, final EventRepository eventRepository) {
+  protected BaseStudentMergeEventHandlerService(final RestUtils restUtils, final CHESEmailService chesEmailService, final EventRepository eventRepository, ApplicationProperties applicationProperties) {
     this.restUtils = restUtils;
     this.chesEmailService = chesEmailService;
     this.eventRepository = eventRepository;
+    this.applicationProperties = applicationProperties;
   }
 
   protected void markRecordAsProcessed(final Event event) {
@@ -52,12 +55,17 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
   }
 
 
+  /**
+   * if the toEmail is blank mark the record as processed , as system is not going to notify.
+   */
   private void processMergeTO(final StudentMerge studentMerge) {
-    final String studentID = studentMerge.getStudentID();
-    final String mergedToStudentID = studentMerge.getMergeStudentID();
-    final Mono<Student> studentMono = this.restUtils.getStudentPenByStudentID(studentID).subscribeOn(Schedulers.parallel());
-    final Mono<Student> mergedToStudentMono = this.restUtils.getStudentPenByStudentID(mergedToStudentID).subscribeOn(Schedulers.parallel());
-    this.processStudentsMergeInfo(Objects.requireNonNull(Mono.zip(studentMono, mergedToStudentMono).block()));
+    if(StringUtils.isNotBlank(applicationProperties.getToEmail())){
+      final String studentID = studentMerge.getStudentID();
+      final String mergedToStudentID = studentMerge.getMergeStudentID();
+      final Mono<Student> studentMono = this.restUtils.getStudentPenByStudentID(studentID).subscribeOn(Schedulers.parallel());
+      final Mono<Student> mergedToStudentMono = this.restUtils.getStudentPenByStudentID(mergedToStudentID).subscribeOn(Schedulers.parallel());
+      this.processStudentsMergeInfo(Objects.requireNonNull(Mono.zip(studentMono, mergedToStudentMono).block()));
+    }
   }
 
 
