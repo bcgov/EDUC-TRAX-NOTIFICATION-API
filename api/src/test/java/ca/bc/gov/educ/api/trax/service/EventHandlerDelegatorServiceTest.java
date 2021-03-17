@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -71,6 +72,7 @@ public class EventHandlerDelegatorServiceTest {
     doNothing().when(message).ack();
     when(message.getData()).thenReturn(JsonUtil.getJsonBytesFromObject(this.createChoreographyEvent(eventID)));
     when(this.restUtils.getStudentPenByStudentID(any())).thenReturn(Mono.just(this.createMockStudent()));
+    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Optional.of(this.createMockTraxStudent()));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorCreateMerge.capture());
     this.eventHandlerDelegatorService.handleChoreographyEvent(this.createChoreographyEvent(eventID), message);
     val result = this.eventRepository.findByEventId(eventID);
@@ -98,6 +100,7 @@ public class EventHandlerDelegatorServiceTest {
     doNothing().when(message).ack();
     when(message.getData()).thenReturn(JsonUtil.getJsonBytesFromObject(this.createDeleteMergeChoreographyEvent(eventID)));
     when(this.restUtils.getStudentPenByStudentID(any())).thenReturn(Mono.just(this.createMockStudent()));
+    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Optional.of(this.createMockTraxStudent()));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorDeleteMerge.capture());
     this.eventHandlerDelegatorService.handleChoreographyEvent(this.createDeleteMergeChoreographyEvent(eventID), message);
     val result = this.eventRepository.findByEventId(eventID);
@@ -167,5 +170,8 @@ public class EventHandlerDelegatorServiceTest {
     merge.setStudentMergeSourceCode("MI");
     studentMerges.add(merge);
     return studentMerges;
+  }
+  private TraxStudent createMockTraxStudent() {
+    return new TraxStudent();
   }
 }

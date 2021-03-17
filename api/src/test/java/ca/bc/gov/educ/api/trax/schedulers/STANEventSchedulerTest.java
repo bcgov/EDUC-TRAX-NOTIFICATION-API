@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -71,6 +72,7 @@ public class STANEventSchedulerTest {
     val eventID = UUID.randomUUID();
     this.eventRepository.save(this.createDeleteMergeChoreographyEvent(eventID));
     when(this.restUtils.getStudentPenByStudentID(any())).thenReturn(Mono.just(this.createMockStudent()));
+    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Optional.of(this.createMockTraxStudent()));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorDeleteMerge.capture());
     this.scheduler.findAndPublishStudentEventsToSTAN();
     this.waitForAsyncToFinish(eventID);
@@ -78,6 +80,10 @@ public class STANEventSchedulerTest {
     assertThat(email).isNotNull();
     assertThat(email.getSubject()).isNotNull();
     assertThat(email.getSubject()).contains("DEMERGED FROM");
+  }
+
+  private TraxStudent createMockTraxStudent() {
+    return new TraxStudent();
   }
 
   private Event createDeleteMergeChoreographyEvent(final UUID eventID) throws JsonProcessingException {

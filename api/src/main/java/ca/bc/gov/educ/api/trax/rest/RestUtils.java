@@ -3,16 +3,22 @@ package ca.bc.gov.educ.api.trax.rest;
 import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import ca.bc.gov.educ.api.trax.struct.CHESEmail;
 import ca.bc.gov.educ.api.trax.struct.Student;
+import ca.bc.gov.educ.api.trax.struct.TraxStudent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.Optional;
 
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
@@ -55,7 +61,26 @@ public class RestUtils {
   public Mono<Student> getStudentPenByStudentID(final String studentID) {
     log.info("calling student api to get pen number for student ID :: {}", studentID);
     return this.webClient.get().uri(this.props.getStudentApiURL() + "/" + studentID).header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).retrieve().bodyToMono(Student.class);
+  }
 
+  public Optional<TraxStudent> getTraxStudentByPen(@NonNull final String pen) {
+    log.info("calling trax api to get student  for pen:: {}", pen);
+    try{
+      return Optional.ofNullable(this.webClient.get()
+          .uri(this.props.getTraxApiURL() ,uri -> uri
+              .path("/students")
+              .queryParam("studNo", pen)
+              .build())
+          .header(CONTENT_TYPE,MediaType.APPLICATION_JSON_VALUE)
+          .retrieve()
+          .bodyToMono(TraxStudent.class).block());
+    }catch (final WebClientResponseException webClientResponseException){
+      if(webClientResponseException.getStatusCode() == HttpStatus.NOT_FOUND){
+        return Optional.empty();
+      }else {
+        throw  webClientResponseException;
+      }
+    }
   }
 
   /**

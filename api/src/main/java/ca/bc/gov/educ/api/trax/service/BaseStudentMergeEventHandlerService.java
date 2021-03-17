@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -59,7 +60,7 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
    * if the toEmail is blank mark the record as processed , as system is not going to notify.
    */
   private void processMergeTO(final StudentMerge studentMerge) {
-    if(StringUtils.isNotBlank(applicationProperties.getToEmail())){
+    if (StringUtils.isNotBlank(applicationProperties.getToEmail())) {
       final String studentID = studentMerge.getStudentID();
       final String mergedToStudentID = studentMerge.getMergeStudentID();
       final Mono<Student> studentMono = this.restUtils.getStudentPenByStudentID(studentID).subscribeOn(Schedulers.parallel());
@@ -70,6 +71,7 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
 
 
   /**
+   * notify only when one of the students is present in trax.
    * From: pens.coordinator@gov.bc.ca
    * To: student.certification@gov.bc.ca
    * Subject: MERGE DIFFERENCE: 123456789 MERGED TO 456789123 IN PEN, NOT MERGED IN TRAX
@@ -78,8 +80,12 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
     final String pen = studentTuple.getT1().getPen();
     final String mergedToPen = studentTuple.getT2().getPen();
     log.info("PEN from API calls PEN {} True PEN {}", pen, mergedToPen);
-    this.prepareAndSendEmail(pen, mergedToPen);
-
+    val traxStudentOptional = restUtils.getTraxStudentByPen(pen);
+    val traxMergedToStudentOptional = restUtils.getTraxStudentByPen(pen);
+    if (traxStudentOptional.isPresent() || traxMergedToStudentOptional.isPresent()) {
+      log.info("either one or both the students are present in trax, notifying...");
+      this.prepareAndSendEmail(pen, mergedToPen);
+    }
   }
 
   private boolean mergeToPredicate(final StudentMerge studentMerge) {

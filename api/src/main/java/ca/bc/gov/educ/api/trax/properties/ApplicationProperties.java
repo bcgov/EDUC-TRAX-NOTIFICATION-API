@@ -66,4 +66,7 @@ public class ApplicationProperties {
   private String chesTokenURL;
   @Value("${ches.endpoint.url}")
   private String chesEndpointURL;
+
+  @Value("${url.api.trax}")
+  private String traxApiURL;
 }
