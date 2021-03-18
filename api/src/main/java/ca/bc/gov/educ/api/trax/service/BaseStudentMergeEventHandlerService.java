@@ -81,7 +81,7 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
     final String mergedToPen = studentTuple.getT2().getPen();
     log.info("PEN from API calls PEN {} True PEN {}", pen, mergedToPen);
     val traxStudentOptional = restUtils.getTraxStudentByPen(pen);
-    val traxMergedToStudentOptional = restUtils.getTraxStudentByPen(pen);
+    val traxMergedToStudentOptional = restUtils.getTraxStudentByPen(mergedToPen);
     if (traxStudentOptional.isPresent() || traxMergedToStudentOptional.isPresent()) {
       log.info("either one or both the students are present in trax, notifying...");
       this.prepareAndSendEmail(pen, mergedToPen);
