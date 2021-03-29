@@ -81,17 +81,25 @@ public class Subscriber implements Closeable {
   public void subscribe() throws InterruptedException, TimeoutException, IOException {
     final SubscriptionOptions options = new SubscriptionOptions.Builder().manualAcks().ackWait(Duration.ofMinutes(5))
         .durableName(ApplicationProperties.API_NAME.concat("-CHOREOGRAPHY-EVENTS-CONSUMER")).build();
-    this.topicsToSubscribe.forEach(topic -> {
+    for (final var topic : this.topicsToSubscribe) {
+      this.connection.subscribe(topic.toString(), ApplicationProperties.API_NAME.concat("-QUEUE"), this::onMessage, options);
+    }
+
+  }
+
+  private void retrySubscription() {
+    int numOfRetries = 0;
+    while (true) {
       try {
-        this.connection.subscribe(topic.toString(), ApplicationProperties.API_NAME.concat("-QUEUE"), this::onMessage, options);
-      } catch (final IOException | TimeoutException e) {
-        log.error("IOException | TimeoutException ", e);
-      } catch (final InterruptedException e) {
-        log.error("InterruptedException ", e);
+        log.trace("retrying subscription as connection was lost :: retrying ::" + numOfRetries++);
+        this.subscribe();
+        log.info("successfully resubscribed after {} attempts", numOfRetries);
+        break;
+      } catch (final InterruptedException | TimeoutException | IOException exception) {
+        log.error("exception occurred while retrying subscription", exception);
         Thread.currentThread().interrupt();
       }
-    });
-
+    }
   }
 
   /**
@@ -124,7 +132,6 @@ public class Subscriber implements Closeable {
   }
 
 
-
   /**
    * This method will keep retrying for a connection.
    *
@@ -134,6 +141,7 @@ public class Subscriber implements Closeable {
   private void connectionLostHandler(final StreamingConnection streamingConnection, final Exception e) {
     if (e != null) {
       this.reconnect();
+      this.retrySubscription();
     }
   }
 

@@ -53,6 +53,7 @@ public class NatsConnection implements Closeable {
     final io.nats.client.Options natsOptions = new io.nats.client.Options.Builder()
         .connectionListener(this::connectionListener)
         .maxPingsOut(5)
+        .oldRequestStyle()
         .pingInterval(Duration.ofSeconds(2))
         .connectionName(ApplicationProperties.API_NAME)
         .connectionTimeout(Duration.ofSeconds(5))
