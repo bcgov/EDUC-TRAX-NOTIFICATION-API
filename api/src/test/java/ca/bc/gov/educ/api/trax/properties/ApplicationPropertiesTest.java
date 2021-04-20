@@ -26,9 +26,8 @@ public class ApplicationPropertiesTest {
     assertThat(this.props.getChesTokenURL()).isNotNull();
     assertThat(this.props.getClientID()).isNotNull();
     assertThat(this.props.getClientSecret()).isNotNull();
-    assertThat(this.props.getStanCluster()).isNotNull();
     assertThat(this.props.getFromEmail()).isNotNull();
-    assertThat(this.props.getStanUrl()).isNotNull();
+    assertThat(this.props.getNatsUrl()).isNotNull();
     assertThat(this.props.getNatsMaxReconnect()).isNotNull();
     assertThat(this.props.getStudentApiURL()).isNotNull();
     assertThat(this.props.getToEmail()).isNotNull();

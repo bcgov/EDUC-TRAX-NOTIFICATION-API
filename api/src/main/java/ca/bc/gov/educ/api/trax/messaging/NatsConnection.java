@@ -37,7 +37,7 @@ public class NatsConnection implements Closeable {
    */
   @Autowired
   public NatsConnection(final ApplicationProperties applicationProperties) throws IOException, InterruptedException {
-    this.natsCon = this.connectToNats(applicationProperties.getStanUrl(), applicationProperties.getNatsMaxReconnect());
+    this.natsCon = this.connectToNats(applicationProperties.getNatsUrl(), applicationProperties.getNatsMaxReconnect());
   }
 
   /**
