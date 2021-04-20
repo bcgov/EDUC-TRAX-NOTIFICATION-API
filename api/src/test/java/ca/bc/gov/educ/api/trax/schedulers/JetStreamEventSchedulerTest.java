@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @ActiveProfiles("test")
-public class STANEventSchedulerTest {
+public class JetStreamEventSchedulerTest {
   @Autowired
   RestUtils restUtils;
 
@@ -47,7 +47,7 @@ public class STANEventSchedulerTest {
 
 
   @Autowired
-  STANEventScheduler scheduler;
+  JetStreamEventScheduler scheduler;
 
   @Autowired
   EventRepository eventRepository;
@@ -68,13 +68,13 @@ public class STANEventSchedulerTest {
 
 
   @Test
-  public void testFindAndPublishStudentEventsToSTAN_givenRecordInDB_shouldRetrySendingEmail() throws JsonProcessingException, InterruptedException {
+  public void testFindAndPublishStudentEventsToJetStream_givenRecordInDB_shouldRetrySendingEmail() throws JsonProcessingException, InterruptedException {
     val eventID = UUID.randomUUID();
     this.eventRepository.save(this.createDeleteMergeChoreographyEvent(eventID));
     when(this.restUtils.getStudentPenByStudentID(any())).thenReturn(Mono.just(this.createMockStudent()));
     when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Optional.of(this.createMockTraxStudent()));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorDeleteMerge.capture());
-    this.scheduler.findAndPublishStudentEventsToSTAN();
+    this.scheduler.findAndProcessEvents();
     this.waitForAsyncToFinish(eventID);
     val email = this.chesEmailArgumentCaptorDeleteMerge.getValue();
     assertThat(email).isNotNull();

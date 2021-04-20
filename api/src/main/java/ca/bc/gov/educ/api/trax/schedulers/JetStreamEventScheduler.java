@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
-public class STANEventScheduler {
+public class JetStreamEventScheduler {
 
   /**
    * The Event repository.
@@ -35,17 +35,18 @@ public class STANEventScheduler {
    * @param eventRepository      the event repository
    * @param studentChoreographer the student choreographer
    */
-  public STANEventScheduler(final EventRepository eventRepository, final StudentChoreographer studentChoreographer) {
+  public JetStreamEventScheduler(final EventRepository eventRepository, final StudentChoreographer studentChoreographer) {
     this.eventRepository = eventRepository;
     this.studentChoreographer = studentChoreographer;
   }
 
   /**
-   * Find and publish student events to stan.
+   * Find and publish student events to jet stream.
    */
   @Scheduled(cron = "${cron.scheduled.process.events.stan}") // every 5 minutes
-  @SchedulerLock(name = "PROCESS_CHOREOGRAPHED_EVENTS_FROM_STAN", lockAtLeastFor = "${cron.scheduled.process.events.stan.lockAtLeastFor}", lockAtMostFor = "${cron.scheduled.process.events.stan.lockAtMostFor}")
-  public void findAndPublishStudentEventsToSTAN() {
+  @SchedulerLock(name = "PROCESS_CHOREOGRAPHED_EVENTS_FROM_JET_STREAM", lockAtLeastFor = "${cron.scheduled.process.events.stan.lockAtLeastFor}", lockAtMostFor = "${cron.scheduled.process.events" +
+      ".stan.lockAtMostFor}")
+  public void findAndProcessEvents() {
     LockAssert.assertLocked();
     this.eventRepository.findAllByEventStatus(EventStatus.DB_COMMITTED.toString())
         .stream()

@@ -6,7 +6,7 @@ import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import ca.bc.gov.educ.api.trax.struct.*;
 import ca.bc.gov.educ.api.trax.util.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.nats.streaming.Message;
+import io.nats.client.Message;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;

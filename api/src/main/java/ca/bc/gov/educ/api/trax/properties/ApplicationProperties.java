@@ -21,13 +21,8 @@ public class ApplicationProperties {
   /**
    * The Stan url.
    */
-  @Value("${stan.url}")
-  String stanUrl;
-  /**
-   * The Stan cluster.
-   */
-  @Value("${stan.cluster}")
-  String stanCluster;
+  @Value("${nats.url}")
+  String natsUrl;
   /**
    * The Nats max reconnect.
    */

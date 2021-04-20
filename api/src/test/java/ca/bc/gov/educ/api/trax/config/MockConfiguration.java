@@ -2,7 +2,7 @@ package ca.bc.gov.educ.api.trax.config;
 
 
 import ca.bc.gov.educ.api.trax.messaging.NatsConnection;
-import ca.bc.gov.educ.api.trax.messaging.stan.Subscriber;
+import ca.bc.gov.educ.api.trax.messaging.jetstream.Subscriber;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import io.nats.client.Connection;
 import org.mockito.Mockito;
