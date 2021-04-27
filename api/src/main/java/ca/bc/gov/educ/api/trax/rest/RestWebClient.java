@@ -5,6 +5,8 @@ import lombok.val;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.client.reactive.ClientHttpConnector;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -13,6 +15,7 @@ import org.springframework.security.oauth2.client.web.reactive.function.client.S
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
+import reactor.netty.http.client.HttpClient;
 
 /**
  * The type Rest web client.
@@ -43,44 +46,52 @@ public class RestWebClient {
   @Bean
   WebClient webClient() {
     val clientRegistryRepo = new InMemoryReactiveClientRegistrationRepository(ClientRegistration
-        .withRegistrationId(this.props.getClientID())
-        .tokenUri(this.props.getTokenURL())
-        .clientId(this.props.getClientID())
-        .clientSecret(this.props.getClientSecret())
-        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-        .build());
+      .withRegistrationId(this.props.getClientID())
+      .tokenUri(this.props.getTokenURL())
+      .clientId(this.props.getClientID())
+      .clientSecret(this.props.getClientSecret())
+      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+      .build());
     val clientService = new InMemoryReactiveOAuth2AuthorizedClientService(clientRegistryRepo);
     val authorizedClientManager =
-        new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
+      new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getClientID());
     final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory();
     factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
+    final HttpClient httpClient = HttpClient.create();
+    final ClientHttpConnector connector = new ReactorClientHttpConnector(httpClient);
+    httpClient.warmup().block();
     return WebClient.builder()
-        .uriBuilderFactory(factory)
-        .filter(oauthFilter)
-        .build();
+      .clientConnector(connector)
+      .uriBuilderFactory(factory)
+      .filter(oauthFilter)
+      .build();
   }
 
   @Bean
   WebClient chesWebClient() {
     val clientRegistryRepo = new InMemoryReactiveClientRegistrationRepository(ClientRegistration
-        .withRegistrationId(this.props.getChesClientID())
-        .tokenUri(this.props.getChesTokenURL())
-        .clientId(this.props.getChesClientID())
-        .clientSecret(this.props.getChesClientSecret())
-        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-        .build());
+      .withRegistrationId(this.props.getChesClientID())
+      .tokenUri(this.props.getChesTokenURL())
+      .clientId(this.props.getChesClientID())
+      .clientSecret(this.props.getChesClientSecret())
+      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+      .build());
     val clientService = new InMemoryReactiveOAuth2AuthorizedClientService(clientRegistryRepo);
     val authorizedClientManager =
-        new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
+      new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getChesClientID());
     final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory();
     factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
+    final HttpClient httpClient = HttpClient.create();
+    final ClientHttpConnector connector = new ReactorClientHttpConnector(httpClient);
+    httpClient.warmup().block();
     return WebClient.builder()
-        .uriBuilderFactory(factory)
-        .filter(oauthFilter)
-        .build();
+      .clientConnector(connector)
+      .uriBuilderFactory(factory)
+      .filter(oauthFilter)
+      .build();
   }
 }
