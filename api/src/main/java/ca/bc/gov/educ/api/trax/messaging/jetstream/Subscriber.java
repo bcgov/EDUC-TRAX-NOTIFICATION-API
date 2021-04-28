@@ -78,6 +78,7 @@ public class Subscriber {
    */
   public void onMessage(final Message message) {
     if (message != null) {
+      log.info("Received message Subject:: {} , SID :: {} , sequence :: {}, pending :: {} ", message.getSubject(), message.getSID(), message.metaData().consumerSequence(), message.metaData().pendingCount());
       try {
         final String eventString = new String(message.getData());
         final ChoreographedEvent event = JsonUtil.getJsonObjectFromString(ChoreographedEvent.class, eventString);
