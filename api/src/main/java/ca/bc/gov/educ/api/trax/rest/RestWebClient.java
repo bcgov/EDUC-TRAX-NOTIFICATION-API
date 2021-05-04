@@ -1,6 +1,7 @@
 package ca.bc.gov.educ.api.trax.rest;
 
 import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
+import io.netty.handler.logging.LogLevel;
 import lombok.val;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,13 +18,17 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
+
 /**
  * The type Rest web client.
  */
 @Configuration
 @Profile("!test")
 public class RestWebClient {
-
+  private final HttpClient client;
+  private final DefaultUriBuilderFactory factory;
+  private final ClientHttpConnector connector;
   /**
    * The Props.
    */
@@ -36,6 +41,13 @@ public class RestWebClient {
    */
   public RestWebClient(final ApplicationProperties props) {
     this.props = props;
+    factory = new DefaultUriBuilderFactory();
+    factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
+    this.client = HttpClient.create().compress(true)
+      .resolver(spec -> spec.queryTimeout(Duration.ofMillis(200)).trace("DNS", LogLevel.TRACE));
+    this.client.warmup()
+      .block();
+    connector = new ReactorClientHttpConnector(this.client);
   }
 
   /**
@@ -57,11 +69,6 @@ public class RestWebClient {
       new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getClientID());
-    final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory();
-    factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
-    final HttpClient httpClient = HttpClient.create();
-    final ClientHttpConnector connector = new ReactorClientHttpConnector(httpClient);
-    httpClient.warmup().block();
     return WebClient.builder()
       .clientConnector(connector)
       .uriBuilderFactory(factory)
@@ -83,11 +90,6 @@ public class RestWebClient {
       new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getChesClientID());
-    final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory();
-    factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
-    final HttpClient httpClient = HttpClient.create();
-    final ClientHttpConnector connector = new ReactorClientHttpConnector(httpClient);
-    httpClient.warmup().block();
     return WebClient.builder()
       .clientConnector(connector)
       .uriBuilderFactory(factory)
