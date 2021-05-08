@@ -1,6 +1,7 @@
 package ca.bc.gov.educ.api.trax.config;
 
 
+import ca.bc.gov.educ.api.trax.messaging.MessagePublisher;
 import ca.bc.gov.educ.api.trax.messaging.NatsConnection;
 import ca.bc.gov.educ.api.trax.messaging.jetstream.Subscriber;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
@@ -22,6 +23,12 @@ public class MockConfiguration {
   @Primary
   public Connection connection() {
     return Mockito.mock(Connection.class);
+  }
+
+  @Bean
+  @Primary
+  public MessagePublisher messagePublisher() {
+    return Mockito.mock(MessagePublisher.class);
   }
 
   @Bean

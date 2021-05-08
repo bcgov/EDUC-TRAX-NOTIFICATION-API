@@ -1,9 +1,11 @@
 package ca.bc.gov.educ.api.trax.service;
 
 import ca.bc.gov.educ.api.trax.constants.EventStatus;
+import ca.bc.gov.educ.api.trax.messaging.MessagePublisher;
 import ca.bc.gov.educ.api.trax.repository.EventRepository;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import ca.bc.gov.educ.api.trax.struct.*;
+import ca.bc.gov.educ.api.trax.support.NatsMessageImpl;
 import ca.bc.gov.educ.api.trax.util.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.nats.client.Message;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +40,10 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 public class EventHandlerDelegatorServiceTest {
 
+  public static final String STUDENT_ID = "7f000101-7151-1d84-8171-5187006c0001";
+  public static final String MERGE_STUDENT_ID = "7f000101-7151-1d84-8171-5187006c0003";
+  @Autowired
+  MessagePublisher messagePublisher;
   @Autowired
   RestUtils restUtils;
 
@@ -70,9 +77,12 @@ public class EventHandlerDelegatorServiceTest {
     val eventID = UUID.randomUUID();
     val message = Mockito.mock(Message.class);
     doNothing().when(message).ack();
+    val natsMsgImpl =new NatsMessageImpl();
+    val responseEvent = ca.bc.gov.educ.api.trax.struct.Event.builder().eventOutcome(EventOutcome.STUDENTS_FOUND).eventPayload(JsonUtil.getJsonStringFromObject(createMockStudent())).build();
+    natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(responseEvent));
+    when(this.messagePublisher.requestMessage(any(),any())).thenReturn(CompletableFuture.completedFuture(natsMsgImpl));
     when(message.getData()).thenReturn(JsonUtil.getJsonBytesFromObject(this.createChoreographyEvent(eventID)));
-    when(this.restUtils.getStudentPenByStudentID(any())).thenReturn(Mono.just(this.createMockStudent()));
-    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Optional.of(this.createMockTraxStudent()));
+    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Mono.just(Optional.of(this.createMockTraxStudent())));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorCreateMerge.capture());
     this.eventHandlerDelegatorService.handleChoreographyEvent(this.createChoreographyEvent(eventID), message);
     val result = this.eventRepository.findByEventId(eventID);
@@ -98,9 +108,12 @@ public class EventHandlerDelegatorServiceTest {
     val message = Mockito.mock(Message.class);
     final int numOfInvocation = mockingDetails(message).getInvocations().size();
     doNothing().when(message).ack();
+    val natsMsgImpl =new NatsMessageImpl();
+    val responseEvent = ca.bc.gov.educ.api.trax.struct.Event.builder().eventOutcome(EventOutcome.STUDENTS_FOUND).eventPayload(JsonUtil.getJsonStringFromObject(createMockStudent())).build();
+    natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(responseEvent));
+    when(this.messagePublisher.requestMessage(any(),any())).thenReturn(CompletableFuture.completedFuture(natsMsgImpl));
     when(message.getData()).thenReturn(JsonUtil.getJsonBytesFromObject(this.createDeleteMergeChoreographyEvent(eventID)));
-    when(this.restUtils.getStudentPenByStudentID(any())).thenReturn(Mono.just(this.createMockStudent()));
-    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Optional.of(this.createMockTraxStudent()));
+    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Mono.just(Optional.of(this.createMockTraxStudent())));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorDeleteMerge.capture());
     this.eventHandlerDelegatorService.handleChoreographyEvent(this.createDeleteMergeChoreographyEvent(eventID), message);
     val result = this.eventRepository.findByEventId(eventID);
@@ -133,11 +146,19 @@ public class EventHandlerDelegatorServiceTest {
     }
   }
 
-  private Student createMockStudent() {
+  private List<Student> createMockStudent() {
+    List<Student> students = new ArrayList<>();
     final Student student = new Student();
     student.setPen("123456789");
-    return student;
+    student.setStudentID(STUDENT_ID);
+    final Student mergeToStudent = new Student();
+    mergeToStudent.setPen("123456788");
+    mergeToStudent.setStudentID(MERGE_STUDENT_ID);
+    students.add(student);
+    students.add(mergeToStudent);
+    return students;
   }
+
 
   private ChoreographedEvent createChoreographyEvent(final UUID eventID) throws JsonProcessingException {
     final ChoreographedEvent choreographedEvent = new ChoreographedEvent();
@@ -164,8 +185,8 @@ public class EventHandlerDelegatorServiceTest {
   private List<StudentMerge> createStudentMergePayload() {
     final List<StudentMerge> studentMerges = new ArrayList<>();
     final StudentMerge merge = new StudentMerge();
-    merge.setStudentID("7f000101-7151-1d84-8171-5187006c0001");
-    merge.setMergeStudentID("7f000101-7151-1d84-8171-5187006c0003");
+    merge.setStudentID(STUDENT_ID);
+    merge.setMergeStudentID(MERGE_STUDENT_ID);
     merge.setStudentMergeDirectionCode("TO");
     merge.setStudentMergeSourceCode("MI");
     studentMerges.add(merge);

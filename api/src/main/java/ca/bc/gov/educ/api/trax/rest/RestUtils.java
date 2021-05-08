@@ -7,6 +7,7 @@ import ca.bc.gov.educ.api.trax.struct.TraxStudent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
@@ -57,30 +58,26 @@ public class RestUtils {
    * @param studentID the student id
    * @return the student pen by student id
    */
-  @Retryable(value = {Exception.class}, backoff = @Backoff(multiplier = 2, delay = 2000))
   public Mono<Student> getStudentPenByStudentID(final String studentID) {
     log.info("calling student api to get pen number for student ID :: {}", studentID);
     return this.webClient.get().uri(this.props.getStudentApiURL() + "/" + studentID).header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).retrieve().bodyToMono(Student.class);
   }
 
-  public Optional<TraxStudent> getTraxStudentByPen(@NonNull final String pen) {
+  public Mono<Optional<TraxStudent>> getTraxStudentByPen(@NonNull final String pen) {
     log.info("calling trax api to get student  for pen:: {}", pen);
-    try{
-      return Optional.ofNullable(this.webClient.get()
+      return this.webClient.get()
           .uri(this.props.getTraxApiURL() ,uri -> uri
               .path("/students")
               .queryParam("studNo", pen)
               .build())
           .header(CONTENT_TYPE,MediaType.APPLICATION_JSON_VALUE)
-          .retrieve()
-          .bodyToMono(TraxStudent.class).block());
-    }catch (final WebClientResponseException webClientResponseException){
-      if(webClientResponseException.getStatusCode() == HttpStatus.NOT_FOUND){
-        return Optional.empty();
-      }else {
-        throw  webClientResponseException;
-      }
-    }
+          .exchangeToMono(clientResponse -> {
+              if (clientResponse.statusCode().equals(HttpStatus.OK)) {
+                return clientResponse.bodyToMono(new ParameterizedTypeReference<Optional<TraxStudent>>() {
+                });
+              }
+              return Mono.just(Optional.empty());
+          });
   }
 
   /**

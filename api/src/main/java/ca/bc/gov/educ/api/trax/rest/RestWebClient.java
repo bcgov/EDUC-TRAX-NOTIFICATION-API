@@ -26,7 +26,6 @@ import java.time.Duration;
 @Configuration
 @Profile("!test")
 public class RestWebClient {
-  private final HttpClient client;
   private final DefaultUriBuilderFactory factory;
   private final ClientHttpConnector connector;
   /**
@@ -41,13 +40,13 @@ public class RestWebClient {
    */
   public RestWebClient(final ApplicationProperties props) {
     this.props = props;
-    factory = new DefaultUriBuilderFactory();
-    factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
-    this.client = HttpClient.create().compress(true)
+    this.factory = new DefaultUriBuilderFactory();
+    this.factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
+    final HttpClient client = HttpClient.create().compress(true)
       .resolver(spec -> spec.queryTimeout(Duration.ofMillis(200)).trace("DNS", LogLevel.TRACE));
-    this.client.warmup()
+    client.warmup()
       .block();
-    connector = new ReactorClientHttpConnector(this.client);
+    this.connector = new ReactorClientHttpConnector(client);
   }
 
   /**
@@ -70,8 +69,8 @@ public class RestWebClient {
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getClientID());
     return WebClient.builder()
-      .clientConnector(connector)
-      .uriBuilderFactory(factory)
+      .clientConnector(this.connector)
+      .uriBuilderFactory(this.factory)
       .filter(oauthFilter)
       .build();
   }
@@ -91,8 +90,8 @@ public class RestWebClient {
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getChesClientID());
     return WebClient.builder()
-      .clientConnector(connector)
-      .uriBuilderFactory(factory)
+      .clientConnector(this.connector)
+      .uriBuilderFactory(this.factory)
       .filter(oauthFilter)
       .build();
   }

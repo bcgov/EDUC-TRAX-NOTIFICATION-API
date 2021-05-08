@@ -3,6 +3,8 @@ package ca.bc.gov.educ.api.trax.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+
 /**
  * The type Json util.
  */
@@ -49,5 +51,18 @@ public final class JsonUtil {
    */
   public static byte[] getJsonBytesFromObject(final Object payload) throws JsonProcessingException {
     return new ObjectMapper().writeValueAsBytes(payload);
+  }
+
+  /**
+   * Gets json object from byte array.
+   *
+   * @param <T>     the type parameter
+   * @param clazz   the clazz
+   * @param payload the payload
+   * @return the json object from byte array
+   * @throws IOException the io exception
+   */
+  public static <T> T getJsonObjectFromByteArray(Class<T> clazz, byte[] payload) throws IOException {
+    return objectMapper.readValue(payload, clazz);
   }
 }

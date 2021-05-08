@@ -29,4 +29,5 @@ public enum EventType {
    * Delete Merge Data.
    */
   DELETE_MERGE,
+  GET_STUDENTS
 }

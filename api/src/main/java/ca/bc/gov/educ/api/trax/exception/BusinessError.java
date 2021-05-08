@@ -9,8 +9,11 @@ public enum BusinessError {
   /**
    * The Event already persisted.
    */
-  EVENT_ALREADY_PERSISTED("Event with event id :: $? , is already persisted in DB, a duplicate message from Jet Stream.");
-
+  EVENT_ALREADY_PERSISTED("Event with event id :: $? , is already persisted in DB, a duplicate message from Jet Stream."),
+  /**
+   * The Student not found.
+   */
+  STUDENT_NOT_FOUND("Student not found, this should not have happened, will be retried.");
   @Getter
   private final String code;
 
