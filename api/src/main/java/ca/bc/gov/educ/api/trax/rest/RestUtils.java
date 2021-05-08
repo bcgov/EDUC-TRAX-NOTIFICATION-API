@@ -2,7 +2,6 @@ package ca.bc.gov.educ.api.trax.rest;
 
 import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import ca.bc.gov.educ.api.trax.struct.CHESEmail;
-import ca.bc.gov.educ.api.trax.struct.Student;
 import ca.bc.gov.educ.api.trax.struct.TraxStudent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +10,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -52,32 +48,23 @@ public class RestUtils {
     this.chesWebClient = chesWebClient;
   }
 
-  /**
-   * Gets student pen by student id.
-   *
-   * @param studentID the student id
-   * @return the student pen by student id
-   */
-  public Mono<Student> getStudentPenByStudentID(final String studentID) {
-    log.info("calling student api to get pen number for student ID :: {}", studentID);
-    return this.webClient.get().uri(this.props.getStudentApiURL() + "/" + studentID).header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).retrieve().bodyToMono(Student.class);
-  }
 
   public Mono<Optional<TraxStudent>> getTraxStudentByPen(@NonNull final String pen) {
     log.info("calling trax api to get student  for pen:: {}", pen);
-      return this.webClient.get()
-          .uri(this.props.getTraxApiURL() ,uri -> uri
-              .path("/students")
-              .queryParam("studNo", pen)
-              .build())
-          .header(CONTENT_TYPE,MediaType.APPLICATION_JSON_VALUE)
-          .exchangeToMono(clientResponse -> {
-              if (clientResponse.statusCode().equals(HttpStatus.OK)) {
-                return clientResponse.bodyToMono(new ParameterizedTypeReference<Optional<TraxStudent>>() {
-                });
-              }
-              return Mono.just(Optional.empty());
+    return this.webClient.get()
+      .uri(this.props.getTraxApiURL(), uri -> uri
+        .path("/students")
+        .queryParam("studNo", pen)
+        .build())
+      .header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+      .exchangeToMono(clientResponse -> {
+        if (clientResponse.statusCode().equals(HttpStatus.OK)) {
+          return clientResponse.bodyToMono(new ParameterizedTypeReference<Optional<TraxStudent>>() {
           });
+        }
+        log.info("No student found in TRAX for :: {}", pen);
+        return Mono.just(Optional.empty());
+      });
   }
 
   /**
@@ -85,14 +72,14 @@ public class RestUtils {
    *
    * @param chesEmail the ches email json object as string
    */
-  @Retryable(value = {Exception.class}, backoff = @Backoff(multiplier = 2, delay = 2000))
   public void sendEmail(final CHESEmail chesEmail) {
+    log.info("calling ches to send email :: {}", chesEmail);
     this.chesWebClient
-        .post()
-        .uri(this.props.getChesEndpointURL())
-        .header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-        .body(Mono.just(chesEmail), CHESEmail.class)
-        .retrieve().bodyToMono(String.class).subscribeOn(Schedulers.parallel()).doOnError(this::logError).doOnSuccess(this::onSendEmailSuccess).block();
+      .post()
+      .uri(this.props.getChesEndpointURL())
+      .header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+      .body(Mono.just(chesEmail), CHESEmail.class)
+      .retrieve().bodyToMono(String.class).subscribeOn(Schedulers.parallel()).doOnError(this::logError).doOnSuccess(this::onSendEmailSuccess).block();
   }
 
   private void logError(final Throwable throwable) {

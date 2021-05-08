@@ -31,15 +31,13 @@ public class CHESEmailService {
 
   /**
    * Send toEmail.
-   *
-   * @param toEmail the toEmail
+   *  @param toEmail the toEmail
    * @param body    the body
    * @param subject the subject
    */
   public void sendEmail(final String toEmail, final String body, final String subject) {
     val chesEmail = this.getCHESEmailObject(toEmail, body, subject);
     this.restUtils.sendEmail(chesEmail);
-    log.info("Email sent  :: {} ", chesEmail);
   }
 
   /**
@@ -51,7 +49,7 @@ public class CHESEmailService {
    * @return the ches email json object as string
    */
   public CHESEmail getCHESEmailObject(final String emailAddress, final String body, final String subject) {
-    final CHESEmail chesEmail = new CHESEmail();
+    val chesEmail = new CHESEmail();
     chesEmail.setBody(body);
     chesEmail.setBodyType("text");
     chesEmail.setDelayTS(0);

@@ -6,7 +6,10 @@ import ca.bc.gov.educ.api.trax.model.Event;
 import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import ca.bc.gov.educ.api.trax.repository.EventRepository;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
-import ca.bc.gov.educ.api.trax.struct.*;
+import ca.bc.gov.educ.api.trax.struct.EventOutcome;
+import ca.bc.gov.educ.api.trax.struct.EventType;
+import ca.bc.gov.educ.api.trax.struct.Student;
+import ca.bc.gov.educ.api.trax.struct.StudentMerge;
 import ca.bc.gov.educ.api.trax.util.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,11 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -107,8 +112,7 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
       final Map<String, Student> studentMap = students.stream().collect(Collectors.toConcurrentMap(Student::getStudentID, Function.identity()));
       val student = studentMap.get(studentID);
       val trueStudent = studentMap.get(mergedToStudentID);
-
-      this.processStudentsMergeInfo(student, trueStudent).block();
+      this.processStudentsMergeInfo(student, trueStudent);
     }
   }
 
@@ -119,19 +123,17 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
    * To: student.certification@gov.bc.ca
    * Subject: MERGE DIFFERENCE: 123456789 MERGED TO 456789123 IN PEN, NOT MERGED IN TRAX
    */
-  private Mono<Tuple2<Optional<TraxStudent>, Optional<TraxStudent>>> processStudentsMergeInfo(final Student student, final Student trueStudent) {
+  private void processStudentsMergeInfo(final Student student, final Student trueStudent) {
     final String pen = student.getPen();
     final String mergedToPen = trueStudent.getPen();
     log.info("PEN from API calls PEN {} True PEN {}", pen, mergedToPen);
     val traxStudentOptional = this.restUtils.getTraxStudentByPen(pen);
     val traxMergedToStudentOptional = this.restUtils.getTraxStudentByPen(mergedToPen);
-    return Mono.zip(traxStudentOptional, traxMergedToStudentOptional).map(result->{
-      if (result.getT1().isPresent() || result.getT2().isPresent()) {
-        log.info("either one or both the students are present in trax, notifying...");
-        this.prepareAndSendEmail(pen, mergedToPen);
-      }
-      return result;
-    });
+    val result = Mono.zip(traxStudentOptional, traxMergedToStudentOptional).block();
+    if (result != null && (result.getT1().isPresent() || result.getT2().isPresent())) {
+      log.info("either one or both the students are present in trax, notifying...");
+      this.prepareAndSendEmail(pen, mergedToPen);
+    }
 
   }
 
