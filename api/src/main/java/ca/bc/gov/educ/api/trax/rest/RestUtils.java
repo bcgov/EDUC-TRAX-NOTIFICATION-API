@@ -46,6 +46,7 @@ public class RestUtils {
     this.props = props;
     this.webClient = webClient;
     this.chesWebClient = chesWebClient;
+    this.getTraxStudentByPen("123456789").block(); //initialize during startup.
   }
 
 
