@@ -19,6 +19,7 @@
       src/main/java/ca/bc/gov/educ/api/trax/rest/**,
       src/main/java/ca/bc/gov/educ/api/trax/util/**,
       src/main/java/ca/bc/gov/educ/api/trax/struct/**,
+      src/main/java/ca/bc/gov/educ/api/trax/helpers/**,
       src/main/java/ca/bc/gov/educ/api/trax/TraxNotificationApiResourceApplication.java,
     </sonar.exclusions>
     <java.version>11</java.version>
