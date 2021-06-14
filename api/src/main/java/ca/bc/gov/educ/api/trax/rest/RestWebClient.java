@@ -1,8 +1,10 @@
 package ca.bc.gov.educ.api.trax.rest;
 
+import ca.bc.gov.educ.api.trax.helpers.LogHelper;
 import ca.bc.gov.educ.api.trax.properties.ApplicationProperties;
 import io.netty.handler.logging.LogLevel;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -14,6 +16,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.netty.http.client.HttpClient;
@@ -55,7 +58,8 @@ public class RestWebClient {
    * @return the web client
    */
   @Bean
-  WebClient webClient() {
+  @Autowired
+  WebClient webClient(final WebClient.Builder builder) {
     val clientRegistryRepo = new InMemoryReactiveClientRegistrationRepository(ClientRegistration
       .withRegistrationId(this.props.getClientID())
       .tokenUri(this.props.getTokenURL())
@@ -68,7 +72,11 @@ public class RestWebClient {
       new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getClientID());
-    return WebClient.builder()
+    return builder
+      .codecs(configurer -> configurer
+        .defaultCodecs()
+        .maxInMemorySize(100 * 1024 * 1024))
+      .filter(this.log())
       .clientConnector(this.connector)
       .uriBuilderFactory(this.factory)
       .filter(oauthFilter)
@@ -76,7 +84,8 @@ public class RestWebClient {
   }
 
   @Bean
-  WebClient chesWebClient() {
+  @Autowired
+  WebClient chesWebClient(final WebClient.Builder builder) {
     val clientRegistryRepo = new InMemoryReactiveClientRegistrationRepository(ClientRegistration
       .withRegistrationId(this.props.getChesClientID())
       .tokenUri(this.props.getChesTokenURL())
@@ -89,10 +98,21 @@ public class RestWebClient {
       new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
     val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
     oauthFilter.setDefaultClientRegistrationId(this.props.getChesClientID());
-    return WebClient.builder()
+    return builder
+      .codecs(configurer -> configurer
+        .defaultCodecs()
+        .maxInMemorySize(100 * 1024 * 1024))
+      .filter(this.log())
       .clientConnector(this.connector)
       .uriBuilderFactory(this.factory)
       .filter(oauthFilter)
       .build();
+  }
+
+  private ExchangeFilterFunction log() {
+    return (clientRequest, next) ->
+      next
+        .exchange(clientRequest)
+        .doOnNext((clientResponse -> LogHelper.logClientHttpReqResponseDetails(clientRequest.method(), clientRequest.url().toString(), clientResponse.rawStatusCode(), clientRequest.headers().get(ApplicationProperties.CORRELATION_ID))));
   }
 }

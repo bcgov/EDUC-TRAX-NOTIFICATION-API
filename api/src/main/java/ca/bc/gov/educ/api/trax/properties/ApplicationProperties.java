@@ -18,6 +18,7 @@ public class ApplicationProperties {
    * The constant API_NAME.
    */
   public static final String API_NAME = "TRAX-NOTIFICATION-API";
+  public static final String CORRELATION_ID = "correlationID";
   /**
    * The Stan url.
    */

@@ -9,7 +9,7 @@ import java.io.IOException;
  * The type Json util.
  */
 public final class JsonUtil {
-  private static final ObjectMapper objectMapper = new ObjectMapper();
+  public static final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Instantiates a new Json util.
