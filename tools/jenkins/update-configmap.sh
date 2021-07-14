@@ -102,18 +102,18 @@ PARSER_CONFIG="
     Format      json
 "
 if [ "$envValue" = "tools" ]; then
-  PEN_COORDINATOR_EMAIL=omprakashmishra7234@gmail.com
-  TO_EMAIL=omprakashmishra7234@gmail.com
+  PEN_COORDINATOR_EMAIL=om@gmail.com
+  TO_EMAIL=aditya.sharma@gov.bc.ca
 fi
 
 if [ "$envValue" = "dev" ]; then
-  PEN_COORDINATOR_EMAIL=gurvinder.bhatia@gov.bc.ca
-  TO_EMAIL=omprakashmishra7234@gmail.com
+  PEN_COORDINATOR_EMAIL=om@gmail.com
+  TO_EMAIL=aditya.sharma@gov.bc.ca
 fi
 
 if [ "$envValue" = "test" ]; then
-  PEN_COORDINATOR_EMAIL=gurvinder.bhatia@gov.bc.ca
-  TO_EMAIL=omprakashmishra7234@gmail.com
+  PEN_COORDINATOR_EMAIL=om@gmail.com
+  TO_EMAIL=aditya.sharma@gov.bc.ca
 fi
 
 if [ "$envValue" = "prod" ]; then
