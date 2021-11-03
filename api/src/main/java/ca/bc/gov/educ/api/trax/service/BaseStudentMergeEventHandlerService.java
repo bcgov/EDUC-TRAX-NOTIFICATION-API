@@ -123,23 +123,10 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
    * To: student.certification@gov.bc.ca
    * Subject: MERGE DIFFERENCE: 123456789 MERGED TO 456789123 IN PEN, NOT MERGED IN TRAX
    */
-  private void processStudentsMergeInfo(final Student student, final Student trueStudent) {
-    final String pen = student.getPen();
-    final String mergedToPen = trueStudent.getPen();
-    log.info("PEN from API calls PEN {} True PEN {}", pen, mergedToPen);
-    val traxStudentOptional = this.restUtils.getTraxStudentByPen(pen);
-    val traxMergedToStudentOptional = this.restUtils.getTraxStudentByPen(mergedToPen);
-    val result = Mono.zip(traxStudentOptional, traxMergedToStudentOptional).block();
-    if (result != null && (result.getT1().isPresent() && result.getT2().isPresent())) {
-      log.info("Both the students are present in TRAX, notifying...");
-      this.prepareAndSendEmail(pen, mergedToPen);
-    }
-
-  }
+  protected abstract void processStudentsMergeInfo(final Student student, final Student trueStudent);
 
   private boolean mergeToPredicate(final StudentMerge studentMerge) {
     return StringUtils.equals(studentMerge.getStudentMergeDirectionCode(), "TO");
   }
 
-  protected abstract void prepareAndSendEmail(String pen, String mergedToPEN);
 }
