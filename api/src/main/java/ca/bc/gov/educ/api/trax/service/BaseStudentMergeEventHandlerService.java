@@ -130,8 +130,8 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
     val traxStudentOptional = this.restUtils.getTraxStudentByPen(pen);
     val traxMergedToStudentOptional = this.restUtils.getTraxStudentByPen(mergedToPen);
     val result = Mono.zip(traxStudentOptional, traxMergedToStudentOptional).block();
-    if (result != null && (result.getT1().isPresent() || result.getT2().isPresent())) {
-      log.info("either one or both the students are present in trax, notifying...");
+    if (result != null && (result.getT1().isPresent() && result.getT2().isPresent())) {
+      log.info("Both the students are present in TRAX, notifying...");
       this.prepareAndSendEmail(pen, mergedToPen);
     }
 
