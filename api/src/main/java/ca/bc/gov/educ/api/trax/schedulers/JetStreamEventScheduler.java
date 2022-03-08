@@ -1,5 +1,7 @@
 package ca.bc.gov.educ.api.trax.schedulers;
 
+import static java.util.stream.Collectors.toList;
+
 import ca.bc.gov.educ.api.trax.choreographer.StudentChoreographer;
 import ca.bc.gov.educ.api.trax.constants.EventStatus;
 import ca.bc.gov.educ.api.trax.repository.EventRepository;
@@ -48,9 +50,14 @@ public class JetStreamEventScheduler {
       ".stan.lockAtMostFor}")
   public void findAndProcessEvents() {
     LockAssert.assertLocked();
-    this.eventRepository.findAllByEventStatusOrderByCreateDate(EventStatus.DB_COMMITTED.toString())
+    final var results = this.eventRepository.findAllByEventStatusOrderByCreateDate(EventStatus.DB_COMMITTED.toString())
         .stream()
         .filter(el -> el.getUpdateDate().isBefore(LocalDateTime.now().minusMinutes(5)))
-        .forEach(this.studentChoreographer::handleEvent);
+        .collect(toList());
+
+    if (!results.isEmpty()) {
+      log.info("found {} choreographed events which needs to be processed in TRAX-NOTIFICATION-API.", results.size());
+      results.forEach(this.studentChoreographer::handleEvent);
+    }
   }
 }
