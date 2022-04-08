@@ -13,3 +13,4 @@
 /api/src/main/resources/*local.properties
 /api/*.iml
 /api/trax-notification-api.iml
+api/target
