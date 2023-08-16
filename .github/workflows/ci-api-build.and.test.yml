@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
       - 'feature/**'
       - 'Feature/**'
       - 'fix/*'
@@ -12,7 +12,7 @@ on:
     paths:
       - 'api/**'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'api/**'
 jobs:
