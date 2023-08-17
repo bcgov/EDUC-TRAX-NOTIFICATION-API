@@ -1,7 +1,15 @@
 envValue=$1
 APP_NAME=$2
 OPENSHIFT_NAMESPACE=$3
-APP_NAME_UPPER=${APP_NAME^^}
+COMMON_NAMESPACE=$4
+DB_JDBC_CONNECT_STRING=$5
+DB_PWD=$6
+DB_USER=$7
+SPLUNK_TOKEN=$8
+CHES_CLIENT_ID=$9
+CHES_CLIENT_SECRET=${10}
+CHES_TOKEN_URL=${11}
+CHES_ENDPOINT_URL=${12}
 
 TZVALUE="America/Vancouver"
 SOAM_KC_REALM_ID="master"
@@ -9,14 +17,7 @@ SOAM_KC_REALM_ID="master"
 SOAM_KC=soam-$envValue.apps.silver.devops.gov.bc.ca
 SOAM_KC_LOAD_USER_ADMIN=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get secret sso-admin-${envValue} | sed -n 's/.*"username": "\(.*\)"/\1/p' | base64 --decode)
 SOAM_KC_LOAD_USER_PASS=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get secret sso-admin-${envValue} | sed -n 's/.*"password": "\(.*\)",/\1/p' | base64 --decode)
-CHES_CLIENT_ID=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps ${APP_NAME}-${envValue}-setup-config | sed -n "s/.*\"CHES_CLIENT_ID\": \"\(.*\)\",/\1/p")
-CHES_CLIENT_SECRET=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps ${APP_NAME}-${envValue}-setup-config | sed -n "s/.*\"CHES_CLIENT_SECRET\": \"\(.*\)\",/\1/p")
-CHES_TOKEN_URL=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps ${APP_NAME}-${envValue}-setup-config | sed -n "s/.*\"CHES_TOKEN_URL\": \"\(.*\)\",/\1/p")
-CHES_ENDPOINT_URL=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps ${APP_NAME}-${envValue}-setup-config | sed -n "s/.*\"CHES_ENDPOINT_URL\": \"\(.*\)\",/\1/p")
-DB_JDBC_CONNECT_STRING=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps ${APP_NAME}-${envValue}-setup-config | sed -n 's/.*"DB_JDBC_CONNECT_STRING": "\(.*\)",/\1/p')
-DB_PWD=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps ${APP_NAME}-${envValue}-setup-config | sed -n "s/.*\"DB_PWD_${APP_NAME_UPPER}\": \"\(.*\)\",/\1/p")
-DB_USER=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps "${APP_NAME}"-"${envValue}"-setup-config | sed -n "s/.*\"DB_USER_${APP_NAME_UPPER}\": \"\(.*\)\",/\1/p")
-SPLUNK_TOKEN=$(oc -n "$OPENSHIFT_NAMESPACE"-"$envValue" -o json get configmaps "${APP_NAME}"-"${envValue}"-setup-config | sed -n "s/.*\"SPLUNK_TOKEN_${APP_NAME_UPPER}\": \"\(.*\)\"/\1/p")
+
 NATS_CLUSTER=educ_nats_cluster
 NATS_URL="nats://nats.${OPENSHIFT_NAMESPACE}-${envValue}.svc.cluster.local:4222"
 
@@ -101,19 +102,14 @@ PARSER_CONFIG="
     Name        docker
     Format      json
 "
-if [ "$envValue" = "tools" ]; then
-  PEN_COORDINATOR_EMAIL=om@gmail.com
-  TO_EMAIL=aditya.sharma@gov.bc.ca
-fi
-
 if [ "$envValue" = "dev" ]; then
-  PEN_COORDINATOR_EMAIL=om@gmail.com
-  TO_EMAIL=aditya.sharma@gov.bc.ca
+  PEN_COORDINATOR_EMAIL=dev.pens.coordinator@no-reply.gov.bc.ca
+  TO_EMAIL=EDUCDO@Victoria1.gov.bc.ca
 fi
 
 if [ "$envValue" = "test" ]; then
-  PEN_COORDINATOR_EMAIL=om@gmail.com
-  TO_EMAIL=aditya.sharma@gov.bc.ca
+  PEN_COORDINATOR_EMAIL=test.pens.coordinator@no-reply.gov.bc.ca
+  TO_EMAIL=EDUCDO@Victoria1.gov.bc.ca
 fi
 
 if [ "$envValue" = "prod" ]; then
