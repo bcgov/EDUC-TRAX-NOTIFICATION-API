@@ -17,12 +17,12 @@ public abstract class BaseRequest {
   /**
    * The Create user.
    */
-  @Size(max = 32)
+  @Size(max = 100)
   public String createUser;
   /**
    * The Update user.
    */
-  @Size(max = 32)
+  @Size(max = 100)
   public String updateUser;
   /**
    * The Create date.
