@@ -35,7 +35,7 @@ env:
   TAG: "latest"
   TARGET_ENV: "prod"
   MIN_REPLICAS: "3"
-  MAX_REPLICAS: "3"
+  MAX_REPLICAS: "4"
   MIN_CPU: "25m"
   MAX_CPU: "300m"
   MIN_MEM: "650Mi"
@@ -48,7 +48,6 @@ on:
 jobs:
   openshift-ci-cd:
     name: Deploy to OpenShift PROD
-    # ubuntu-22.04 can also be used.
     runs-on: ubuntu-22.04
     environment: production
 
