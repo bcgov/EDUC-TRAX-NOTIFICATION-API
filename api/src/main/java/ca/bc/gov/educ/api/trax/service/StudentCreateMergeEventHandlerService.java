@@ -46,7 +46,7 @@ public class StudentCreateMergeEventHandlerService extends BaseStudentMergeEvent
    * Subject: MERGE DIFFERENCE: 123456789 MERGED TO 456789123 IN PEN, NOT MERGED IN TRAX
    */
   @Override
-  public void processStudentsMergeInfo(final Student student, final Student trueStudent) {
+  protected void processStudentsMergeInfo(final Student student, final Student trueStudent) {
     final String pen = student.getPen();
     final String mergedToPen = trueStudent.getPen();
     final String studentId = student.getStudentID();
