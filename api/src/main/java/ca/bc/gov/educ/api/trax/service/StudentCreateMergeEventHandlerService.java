@@ -6,6 +6,7 @@ import ca.bc.gov.educ.api.trax.repository.EventRepository;
 import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import ca.bc.gov.educ.api.trax.struct.EventType;
 import ca.bc.gov.educ.api.trax.struct.Student;
+import ca.bc.gov.educ.api.trax.exception.NotificationApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,7 +63,7 @@ public class StudentCreateMergeEventHandlerService extends BaseStudentMergeEvent
       }
     } catch (Exception e) {
       log.error("Error checking student existence in GRAD-STUDENT-API for Student IDs: {} and {}", studentId, mergedToStudentId, e);
-      throw new RuntimeException("Failed to check students. This should not have happened and will be retried.");
+      throw new NotificationApiException("Failed to check students. This should not have happened and will be retried.", e);
     }
   }
 

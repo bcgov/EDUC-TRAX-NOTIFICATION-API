@@ -12,6 +12,7 @@ import ca.bc.gov.educ.api.trax.struct.Student;
 import ca.bc.gov.educ.api.trax.struct.StudentMerge;
 import ca.bc.gov.educ.api.trax.struct.GradStudent;
 import ca.bc.gov.educ.api.trax.util.JsonUtil;
+import ca.bc.gov.educ.api.trax.exception.NotificationApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -150,14 +151,18 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
           log.info("Student {} not found in GRAD-STUDENT-API", studentId);
           return false;
         } else {
-          throw new RuntimeException("GRAD-STUDENT-API error for student " + studentId + ": " + gradStudent.getException());
+          throw new NotificationApiException("GRAD-STUDENT-API error for student " + studentId + ": " + gradStudent.getException());
         }
       }
       log.info("Student {} found in GRAD-STUDENT-API", studentId);
       return true;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.error("Interrupted while checking student {}: {}", studentId, e.getMessage());
+      throw new NotificationApiException("Interrupted while checking student " + studentId, e);
     } catch (Exception e) {
       log.error("Error checking student {}: {}", studentId, e.getMessage());
-      throw new RuntimeException("Failed to check student " + studentId, e);
+      throw new NotificationApiException("Failed to check student " + studentId, e);
     }
   }
 
