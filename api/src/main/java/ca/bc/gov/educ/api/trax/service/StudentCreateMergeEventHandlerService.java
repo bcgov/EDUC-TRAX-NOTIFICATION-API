@@ -7,10 +7,10 @@ import ca.bc.gov.educ.api.trax.rest.RestUtils;
 import ca.bc.gov.educ.api.trax.struct.EventType;
 import ca.bc.gov.educ.api.trax.struct.Student;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
+
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -40,27 +40,46 @@ public class StudentCreateMergeEventHandlerService extends BaseStudentMergeEvent
   }
 
   /**
-   * notify only when one of the students is present in trax.
+   * notify only when one of the students is present in GRAD-STUDENT-API.
    * From: pens.coordinator@gov.bc.ca
    * To: student.certification@gov.bc.ca
    * Subject: MERGE DIFFERENCE: 123456789 MERGED TO 456789123 IN PEN, NOT MERGED IN TRAX
    */
   @Override
-  protected void processStudentsMergeInfo(final Student student, final Student trueStudent) {
+  public void processStudentsMergeInfo(final Student student, final Student trueStudent) {
     final String pen = student.getPen();
     final String mergedToPen = trueStudent.getPen();
-    log.info("PEN from API calls PEN {} True PEN {}", pen, mergedToPen);
-    val traxStudentOptional = this.restUtils.getTraxStudentByPen(pen);
-    val traxMergedToStudentOptional = this.restUtils.getTraxStudentByPen(mergedToPen);
-    val result = Mono.zip(traxStudentOptional, traxMergedToStudentOptional).block();
-    if (result != null && (result.getT1().isPresent() && result.getT2().isPresent())) {
-      log.info("Both the students are present in TRAX, notifying...");
-      this.prepareAndSendEmail(pen, mergedToPen);
+    final String studentId = student.getStudentID();
+    final String mergedToStudentId = trueStudent.getStudentID();
+    log.info("PEN from API calls PEN {} True PEN {}, Student IDs: {} and {}", pen, mergedToPen, studentId, mergedToStudentId);
+    
+    try {
+      if (checkBothStudentsExistInGradStudentApi(studentId, mergedToStudentId)) {
+        log.info("Both students are present in GRAD-STUDENT-API, notifying...");
+        this.prepareAndSendEmail(pen, mergedToPen);
+      } else {
+        log.info("One or both students not found in GRAD-STUDENT-API");
+      }
+    } catch (Exception e) {
+      log.error("Error checking student existence in GRAD-STUDENT-API for Student IDs: {} and {}", studentId, mergedToStudentId, e);
+      throw new RuntimeException("Failed to check students. This should not have happened and will be retried.");
     }
   }
 
+  private boolean checkBothStudentsExistInGradStudentApi(final String studentId, final String mergedToStudentId) throws Exception {
+    log.info("Checking both students {} and {} in GRAD-STUDENT-API in parallel", studentId, mergedToStudentId);
+    
+    CompletableFuture<Boolean> firstFuture = CompletableFuture.supplyAsync(() -> checkStudentExistsInGradStudentApi(studentId));
+    CompletableFuture<Boolean> secondFuture = CompletableFuture.supplyAsync(() -> checkStudentExistsInGradStudentApi(mergedToStudentId));
+    
+    CompletableFuture.allOf(firstFuture, secondFuture).get();
+
+    return firstFuture.get() && secondFuture.get();
+  }
+
+
   protected void prepareAndSendEmail(final String pen, final String mergedToPen) {
-    final String subject = "MERGE DIFFERENCE: ".concat(pen).concat(" MERGED TO ").concat(mergedToPen).concat(" IN PEN, NOT MERGED IN TRAX");
+    final String subject = "MERGE DIFFERENCE: ".concat(pen).concat(" MERGED TO ").concat(mergedToPen).concat(" IN PEN, NOT MERGED IN GRAD");
     this.chesEmailService.sendEmail(null, subject, subject);
   }
 }

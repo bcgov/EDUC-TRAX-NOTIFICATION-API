@@ -20,15 +20,11 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import reactor.core.publisher.Mono;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -83,8 +79,10 @@ public class JetStreamEventSchedulerTest {
     val natsMsgImpl =new NatsMessageImpl();
     val responseEvent = ca.bc.gov.educ.api.trax.struct.Event.builder().eventOutcome(EventOutcome.STUDENTS_FOUND).eventPayload(JsonUtil.getJsonStringFromObject(createMockStudent())).build();
     natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(responseEvent));
-    when(this.messagePublisher.requestMessage(any(),any())).thenReturn(CompletableFuture.completedFuture(natsMsgImpl));
-    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Mono.just(Optional.of(this.createMockTraxStudent())));
+    when(this.messagePublisher.requestMessage(any(),any()))
+        .thenReturn(CompletableFuture.completedFuture(natsMsgImpl))
+        .thenReturn(CompletableFuture.completedFuture(createMockGradStudentMessage(STUDENT_ID, false)))
+        .thenReturn(CompletableFuture.completedFuture(createMockGradStudentMessage(MERGE_TO_STUDENT_ID, true)));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorDeleteMerge.capture());
     this.scheduler.findAndProcessEvents();
     this.waitForAsyncToFinish(eventID);
@@ -92,10 +90,17 @@ public class JetStreamEventSchedulerTest {
     assertThat(email).isNotNull();
     assertThat(email.getSubject()).isNotNull();
     assertThat(email.getSubject()).contains("DEMERGED FROM");
+    assertThat(email.getSubject()).contains("NOT DEMERGED IN GRAD");
   }
 
-  private TraxStudent createMockTraxStudent() {
-    return new TraxStudent();
+  private NatsMessageImpl createMockGradStudentMessage(final String studentId, final boolean notFound) throws JsonProcessingException {
+    val gradStudent = notFound ? 
+        GradStudent.builder().studentID(studentId).exception("not found").build() :
+        GradStudent.builder().studentID(studentId).program("2018-EN").graduated("Y").exception(null).build();
+    
+    val natsMsgImpl = new NatsMessageImpl();
+    natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(gradStudent));
+    return natsMsgImpl;
   }
 
   private Event createDeleteMergeChoreographyEvent(final UUID eventID) throws JsonProcessingException {

@@ -21,12 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -80,9 +77,11 @@ public class EventHandlerDelegatorServiceTest {
     val natsMsgImpl =new NatsMessageImpl();
     val responseEvent = ca.bc.gov.educ.api.trax.struct.Event.builder().eventOutcome(EventOutcome.STUDENTS_FOUND).eventPayload(JsonUtil.getJsonStringFromObject(createMockStudent())).build();
     natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(responseEvent));
-    when(this.messagePublisher.requestMessage(any(),any())).thenReturn(CompletableFuture.completedFuture(natsMsgImpl));
+    when(this.messagePublisher.requestMessage(any(),any()))
+        .thenReturn(CompletableFuture.completedFuture(natsMsgImpl))
+        .thenReturn(CompletableFuture.completedFuture(createMockGradStudentMessage(STUDENT_ID, false)))
+        .thenReturn(CompletableFuture.completedFuture(createMockGradStudentMessage(MERGE_STUDENT_ID, false)));
     when(message.getData()).thenReturn(JsonUtil.getJsonBytesFromObject(this.createChoreographyEvent(eventID)));
-    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Mono.just(Optional.of(this.createMockTraxStudent())));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorCreateMerge.capture());
     this.eventHandlerDelegatorService.handleChoreographyEvent(this.createChoreographyEvent(eventID), message);
     val result = this.eventRepository.findByEventId(eventID);
@@ -92,6 +91,7 @@ public class EventHandlerDelegatorServiceTest {
     assertThat(email).isNotNull();
     assertThat(email.getSubject()).isNotNull();
     assertThat(email.getSubject()).contains("MERGE DIFFERENCE:");
+    assertThat(email.getSubject()).contains("NOT MERGED IN GRAD");
     val eventOptional = this.eventRepository.findByEventId(eventID);
     assertThat(eventOptional).isPresent();
     assertThat(eventOptional.get().getEventStatus()).isEqualTo(EventStatus.PROCESSED.toString());
@@ -111,9 +111,11 @@ public class EventHandlerDelegatorServiceTest {
     val natsMsgImpl =new NatsMessageImpl();
     val responseEvent = ca.bc.gov.educ.api.trax.struct.Event.builder().eventOutcome(EventOutcome.STUDENTS_FOUND).eventPayload(JsonUtil.getJsonStringFromObject(createMockStudent())).build();
     natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(responseEvent));
-    when(this.messagePublisher.requestMessage(any(),any())).thenReturn(CompletableFuture.completedFuture(natsMsgImpl));
+    when(this.messagePublisher.requestMessage(any(),any()))
+        .thenReturn(CompletableFuture.completedFuture(natsMsgImpl))
+        .thenReturn(CompletableFuture.completedFuture(createMockGradStudentMessage(STUDENT_ID, false)))
+        .thenReturn(CompletableFuture.completedFuture(createMockGradStudentMessage(MERGE_STUDENT_ID, true)));
     when(message.getData()).thenReturn(JsonUtil.getJsonBytesFromObject(this.createDeleteMergeChoreographyEvent(eventID)));
-    when(this.restUtils.getTraxStudentByPen(any())).thenReturn(Mono.just(Optional.of(this.createMockTraxStudent())));
     doNothing().when(this.restUtils).sendEmail(this.chesEmailArgumentCaptorDeleteMerge.capture());
     this.eventHandlerDelegatorService.handleChoreographyEvent(this.createDeleteMergeChoreographyEvent(eventID), message);
     val result = this.eventRepository.findByEventId(eventID);
@@ -123,6 +125,7 @@ public class EventHandlerDelegatorServiceTest {
     assertThat(email).isNotNull();
     assertThat(email.getSubject()).isNotNull();
     assertThat(email.getSubject()).contains("DEMERGED FROM");
+    assertThat(email.getSubject()).contains("NOT DEMERGED IN GRAD");
     val eventOptional = this.eventRepository.findByEventId(eventID);
     assertThat(eventOptional).isPresent();
     assertThat(eventOptional.get().getEventStatus()).isEqualTo(EventStatus.PROCESSED.toString());
@@ -192,7 +195,14 @@ public class EventHandlerDelegatorServiceTest {
     studentMerges.add(merge);
     return studentMerges;
   }
-  private TraxStudent createMockTraxStudent() {
-    return new TraxStudent();
+
+  private NatsMessageImpl createMockGradStudentMessage(final String studentId, final boolean notFound) throws JsonProcessingException {
+    val gradStudent = notFound ? 
+        GradStudent.builder().studentID(studentId).exception("not found").build() :
+        GradStudent.builder().studentID(studentId).program("2018-EN").graduated("Y").exception(null).build();
+    
+    val natsMsgImpl = new NatsMessageImpl();
+    natsMsgImpl.setData(JsonUtil.getJsonBytesFromObject(gradStudent));
+    return natsMsgImpl;
   }
 }

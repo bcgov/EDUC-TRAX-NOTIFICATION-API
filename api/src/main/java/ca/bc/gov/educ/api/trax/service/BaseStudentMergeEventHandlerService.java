@@ -10,6 +10,7 @@ import ca.bc.gov.educ.api.trax.struct.EventOutcome;
 import ca.bc.gov.educ.api.trax.struct.EventType;
 import ca.bc.gov.educ.api.trax.struct.Student;
 import ca.bc.gov.educ.api.trax.struct.StudentMerge;
+import ca.bc.gov.educ.api.trax.struct.GradStudent;
 import ca.bc.gov.educ.api.trax.util.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -123,6 +124,42 @@ public abstract class BaseStudentMergeEventHandlerService implements EventHandle
    * Subject: MERGE DIFFERENCE: 123456789 MERGED TO 456789123 IN PEN, NOT MERGED IN TRAX
    */
   protected abstract void processStudentsMergeInfo(final Student student, final Student trueStudent);
+
+  /**
+   * Check if a single student exists in GRAD-STUDENT-API using GET_STUDENT event
+   */
+  protected boolean checkStudentExistsInGradStudentApi(final String studentId) {
+    try {
+      final var event = ca.bc.gov.educ.api.trax.struct.Event.builder()
+          .sagaId(java.util.UUID.randomUUID())
+          .eventType(EventType.GET_STUDENT)
+          .eventPayload(studentId)
+          .build();
+      
+      log.info("Sending GET_STUDENT event to GRAD_STUDENT_API for Student ID: {}", studentId);
+
+      String responseJson = new String(this.messagePublisher.requestMessage("GRAD_STUDENT_API_FETCH_GRAD_STUDENT_TOPIC", JsonUtil.getJsonBytesFromObject(event))
+          .get(5, java.util.concurrent.TimeUnit.SECONDS).getData());
+      
+      log.debug("Got response from GRAD_STUDENT_API for Student ID {}: {}", studentId, responseJson);
+
+      GradStudent gradStudent = this.objectMapper.readValue(responseJson, GradStudent.class);
+      
+      if (gradStudent.getException() != null && !gradStudent.getException().isEmpty()) {
+        if ("not found".equalsIgnoreCase(gradStudent.getException())) {
+          log.info("Student {} not found in GRAD-STUDENT-API", studentId);
+          return false;
+        } else {
+          throw new RuntimeException("GRAD-STUDENT-API error for student " + studentId + ": " + gradStudent.getException());
+        }
+      }
+      log.info("Student {} found in GRAD-STUDENT-API", studentId);
+      return true;
+    } catch (Exception e) {
+      log.error("Error checking student {}: {}", studentId, e.getMessage());
+      throw new RuntimeException("Failed to check student " + studentId, e);
+    }
+  }
 
   private boolean mergeToPredicate(final StudentMerge studentMerge) {
     return StringUtils.equals(studentMerge.getStudentMergeDirectionCode(), "TO");
