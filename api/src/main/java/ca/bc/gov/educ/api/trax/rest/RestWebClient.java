@@ -52,38 +52,6 @@ public class RestWebClient {
     this.connector = new ReactorClientHttpConnector(client);
   }
 
-  /**
-   * Web client web client.
-   *
-   * @return the web client
-   */
-  @Bean
-  @Autowired
-  WebClient webClient(final WebClient.Builder builder) {
-    val clientRegistryRepo = new InMemoryReactiveClientRegistrationRepository(ClientRegistration
-      .withRegistrationId(this.props.getClientID())
-      .tokenUri(this.props.getTokenURL())
-      .clientId(this.props.getClientID())
-      .clientSecret(this.props.getClientSecret())
-      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-      .build());
-    val clientService = new InMemoryReactiveOAuth2AuthorizedClientService(clientRegistryRepo);
-    val authorizedClientManager =
-      new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistryRepo, clientService);
-    val oauthFilter = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
-    oauthFilter.setDefaultClientRegistrationId(this.props.getClientID());
-    return builder
-      .defaultHeader("X-Client-Name", ApplicationProperties.API_NAME)
-      .codecs(configurer -> configurer
-        .defaultCodecs()
-        .maxInMemorySize(100 * 1024 * 1024))
-      .filter(this.log())
-      .clientConnector(this.connector)
-      .uriBuilderFactory(this.factory)
-      .filter(oauthFilter)
-      .build();
-  }
-
   @Bean
   @Autowired
   WebClient chesWebClient(final WebClient.Builder builder) {
@@ -114,6 +82,6 @@ public class RestWebClient {
     return (clientRequest, next) ->
       next
         .exchange(clientRequest)
-        .doOnNext((clientResponse -> LogHelper.logClientHttpReqResponseDetails(clientRequest.method(), clientRequest.url().toString(), clientResponse.rawStatusCode(), clientRequest.headers().get(ApplicationProperties.CORRELATION_ID))));
+        .doOnNext((clientResponse -> LogHelper.logClientHttpReqResponseDetails(clientRequest.method(), clientRequest.url().toString(), clientResponse.statusCode().value(), clientRequest.headers().get(ApplicationProperties.CORRELATION_ID))));
   }
 }
