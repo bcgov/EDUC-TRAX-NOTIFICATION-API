@@ -30,5 +30,6 @@ public enum EventType {
    */
   DELETE_MERGE,
   GET_STUDENTS,
-  GET_STUDENT
+  GET_STUDENT,
+  GET_MERGES_IN_DATE_RANGE
 }
